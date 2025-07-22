@@ -104,6 +104,28 @@
         color: white;
     }
     
+    .timer-display {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+        color: white;
+        border-radius: 12px;
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    
+    .timer-warning {
+        background: linear-gradient(45deg, #FF4757, #FF3838) !important;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
     .controls {
         display: flex;
         gap: 15px;
@@ -198,6 +220,10 @@
             คำถามที่ 1 จาก 20
         </div>
         
+        <div class="timer-display" id="timerDisplay">
+            เวลาที่เหลือ: 7:00
+        </div>
+        
         <div class="question" id="questionText">
             กำลังโหลดคำถาม...
         </div>
@@ -207,7 +233,6 @@
         </div>
         
         <div class="controls">
-            <button class="btn-primary" id="nextBtn" onclick="nextQuestion()">คำถามถัดไป</button>
             <button class="btn-secondary" id="resetBtn" onclick="resetQuiz()">เริ่มใหม่</button>
             <button class="btn-success" id="showResultBtn" onclick="showResult()" style="display: none;">ดูผลลัพธ์</button>
         </div>
@@ -327,6 +352,8 @@
     let selectedAnswer = null;
     let answered = false;
     let shuffledQuestions = [];
+    let questionTimer = null;
+    let timeLeft = 420; // 7 minutes in seconds
 
     function shuffleArray(array) {
         const shuffled = [...array];
@@ -355,10 +382,57 @@
         score = 0;
         selectedAnswer = null;
         answered = false;
+        timeLeft = 420; // Reset timer to 7 minutes
         document.getElementById('finalScore').style.display = 'none';
         document.getElementById('showResultBtn').style.display = 'none';
-        document.getElementById('nextBtn').style.display = 'inline-block';
         loadQuestion();
+    }
+
+    function startTimer() {
+        clearInterval(questionTimer);
+        timeLeft = 420; // 7 minutes
+        updateTimerDisplay();
+        
+        questionTimer = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            
+            if (timeLeft <= 60) { // Warning when 1 minute left
+                document.getElementById('timerDisplay').classList.add('timer-warning');
+            }
+            
+            if (timeLeft <= 0) {
+                timeOut();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        document.getElementById('timerDisplay').textContent = `เวลาที่เหลือ: ${display}`;
+    }
+
+    function timeOut() {
+        clearInterval(questionTimer);
+        answered = true;
+        // Don't add to score (time out = wrong answer)
+        showCorrectAnswer();
+        setTimeout(() => {
+            nextQuestion();
+        }, 2000);
+    }
+
+    function showCorrectAnswer() {
+        const question = shuffledQuestions[currentQuestion];
+        const options = document.querySelectorAll('.option');
+        
+        options.forEach((option, index) => {
+            if (index === question.correct) {
+                option.classList.add('correct');
+            }
+        });
     }
 
     function loadQuestion() {
@@ -388,12 +462,19 @@
 
         selectedAnswer = null;
         answered = false;
-        document.getElementById('nextBtn').disabled = true;
+        
+        // Reset timer display
+        document.getElementById('timerDisplay').classList.remove('timer-warning');
+        
+        // Start timer for this question
+        startTimer();
     }
 
     function selectOption(index, element) {
         if (answered) return;
 
+        clearInterval(questionTimer); // Stop timer when answer is selected
+        
         // Remove previous selection
         document.querySelectorAll('.option').forEach(opt => {
             opt.classList.remove('selected');
@@ -402,18 +483,19 @@
         // Mark current selection
         element.classList.add('selected');
         selectedAnswer = index;
-        document.getElementById('nextBtn').disabled = false;
+        
+        // Immediately process the answer
+        processAnswer();
     }
 
-    function nextQuestion() {
-        if (selectedAnswer === null || answered) return;
+    function processAnswer() {
+        if (answered) return;
 
         const question = shuffledQuestions[currentQuestion];
         const options = document.querySelectorAll('.option');
         
         // Show correct/incorrect answers
         options.forEach((option, index) => {
-            option.classList.remove('selected');
             if (index === question.correct) {
                 option.classList.add('correct');
             } else if (index === selectedAnswer && index !== question.correct) {
@@ -428,19 +510,25 @@
 
         answered = true;
         
-        // Move to next question after a delay
+        // Move to next question after a short delay
         setTimeout(() => {
-            currentQuestion++;
-            if (currentQuestion >= shuffledQuestions.length) {
-                document.getElementById('nextBtn').style.display = 'none';
-                document.getElementById('showResultBtn').style.display = 'inline-block';
-            } else {
-                loadQuestion();
-            }
+            nextQuestion();
         }, 1500);
     }
 
+    function nextQuestion() {
+        currentQuestion++;
+        if (currentQuestion >= shuffledQuestions.length) {
+            clearInterval(questionTimer);
+            showResult();
+        } else {
+            loadQuestion();
+        }
+    }
+
     function showResult() {
+        clearInterval(questionTimer); // Stop timer when showing results
+        
         const percentage = Math.round((score / shuffledQuestions.length) * 100);
         let grade = '';
         let color = '';
@@ -471,14 +559,16 @@
         document.getElementById('questionText').style.display = 'none';
         document.getElementById('optionsContainer').style.display = 'none';
         document.getElementById('questionCounter').style.display = 'none';
-        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('timerDisplay').style.display = 'none';
         document.getElementById('showResultBtn').style.display = 'none';
     }
 
     function resetQuiz() {
+        clearInterval(questionTimer); // Clear any existing timer
         document.getElementById('questionText').style.display = 'block';
         document.getElementById('optionsContainer').style.display = 'block';
         document.getElementById('questionCounter').style.display = 'inline-block';
+        document.getElementById('timerDisplay').style.display = 'block';
         initQuiz();
     }
 
