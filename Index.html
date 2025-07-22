@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แอปข้อสอบ PLC Mitsubishi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+```
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .header {
+        background: linear-gradient(45deg, #2196F3, #21CBF3);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+    
+    .header p {
+        opacity: 0.9;
+    }
+    
+    .quiz-content {
+        padding: 30px;
+    }
+    
+    .question-counter {
+        background: #f8f9fa;
+        padding: 10px 20px;
+        border-radius: 25px;
+        display: inline-block;
+        margin-bottom: 20px;
+        font-weight: bold;
+        color: #495057;
+    }
+    
+    .question {
+        font-size: 1.2rem;
+        margin-bottom: 25px;
+        color: #333;
+        line-height: 1.6;
+    }
+    
+    .options {
+        display: grid;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .option {
+        padding: 15px 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+    
+    .option:hover {
+        border-color: #2196F3;
+        background: #e3f2fd;
+    }
+    
+    .option.selected {
+        border-color: #2196F3;
+        background: #2196F3;
+        color: white;
+    }
+    
+    .option.correct {
+        border-color: #4CAF50;
+        background: #4CAF50;
+        color: white;
+    }
+    
+    .option.incorrect {
+        border-color: #f44336;
+        background: #f44336;
+        color: white;
+    }
+    
+    .controls {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    button {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 25px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(45deg, #2196F3, #21CBF3);
+        color: white;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .score-display {
+        text-align: center;
+        padding: 20px;
+        background: linear-gradient(45deg, #4CAF50, #45a049);
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    
+    .score-display h2 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(45deg, #2196F3, #21CBF3);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 แอปข้อสอบ PLC Mitsubishi</h1>
+            <p>ทดสอบความรู้พื้นฐาน PLC ของ Mitsubishi</p>
+        </div>
+
+```
+    <div class="quiz-content">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        
+        <div class="question-counter" id="questionCounter">
+            คำถามที่ 1 จาก 20
+        </div>
+        
+        <div class="question" id="questionText">
+            กำลังโหลดคำถาม...
+        </div>
+        
+        <div class="options" id="optionsContainer">
+            <!-- Options will be dynamically inserted here -->
+        </div>
+        
+        <div class="controls">
+            <button class="btn-primary" id="nextBtn" onclick="nextQuestion()">คำถามถัดไป</button>
+            <button class="btn-secondary" id="resetBtn" onclick="resetQuiz()">เริ่มใหม่</button>
+            <button class="btn-success" id="showResultBtn" onclick="showResult()" style="display: none;">ดูผลลัพธ์</button>
+        </div>
+        
+        <div class="score-display" id="finalScore" style="display: none;">
+            <!-- Final score will be displayed here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    let questions = [
+        {
+            question: "PLC ย่อมาจากคำว่าอะไร?",
+            options: ["Programmable Logic Controller", "Programmable Linear Computer", "Personal Logic Controller", "Portable Logic Computer"],
+            correct: 0
+        },
+        {
+            question: "ในระบบ PLC ของ Mitsubishi หน่วยความจำ M หมายถึงอะไร?",
+            options: ["Motor", "Memory", "Internal Relay", "Manual"],
+            correct: 2
+        },
+        {
+            question: "คำสั่ง LD ใน PLC Mitsubishi หมายถึงอะไร?",
+            options: ["Load", "Logic Data", "Line Drive", "Loop Down"],
+            correct: 0
+        },
+        {
+            question: "Input ของ PLC Mitsubishi เริ่มต้นด้วยตัวอักษรอะไร?",
+            options: ["I", "X", "Y", "M"],
+            correct: 1
+        },
+        {
+            question: "Output ของ PLC Mitsubishi เริ่มต้นด้วยตัวอักษรอะไร?",
+            options: ["O", "Y", "X", "Z"],
+            correct: 1
+        },
+        {
+            question: "คำสั่ง OUT ใน PLC Mitsubishi ใช้เพื่ออะไร?",
+            options: ["อ่านค่า Input", "เขียนค่า Output", "ลบข้อมูล", "คำนวณ"],
+            correct: 1
+        },
+        {
+            question: "Timer ใน PLC Mitsubishi เริ่มต้นด้วยตัวอักษรอะไร?",
+            options: ["T", "C", "D", "K"],
+            correct: 0
+        },
+        {
+            question: "Counter ใน PLC Mitsubishi เริ่มต้นด้วยตัวอักษรอะไร?",
+            options: ["T", "C", "D", "K"],
+            correct: 1
+        },
+        {
+            question: "Data Register ใน PLC Mitsubishi เริ่มต้นด้วยตัวอักษรอะไร?",
+            options: ["T", "C", "D", "M"],
+            correct: 2
+        },
+        {
+            question: "คำสั่ง AND ใน PLC Mitsubishi ใช้เชื่อมต่อ Contact แบบใด?",
+            options: ["แบบขนาน", "แบบอนุกรม", "แบบผสม", "แบบวงจร"],
+            correct: 1
+        },
+        {
+            question: "คำสั่ง OR ใน PLC Mitsubishi ใช้เชื่อมต่อ Contact แบบใด?",
+            options: ["แบบขนาน", "แบบอนุกรม", "แบบผสม", "แบบวงจร"],
+            correct: 0
+        },
+        {
+            question: "Normally Open Contact ใน PLC แสดงด้วยสัญลักษณ์อะไร?",
+            options: ["--| |--", "--|/|--", "--( )--", "--|∧|--"],
+            correct: 0
+        },
+        {
+            question: "Normally Closed Contact ใน PLC แสดงด้วยสัญลักษณ์อะไร?",
+            options: ["--| |--", "--|/|--", "--( )--", "--|∧|--"],
+            correct: 1
+        },
+        {
+            question: "วงจร Scan Time ใน PLC หมายถึงอะไร?",
+            options: ["เวลาที่ใช้ในการสแกนโปรแกรมหนึ่งรอบ", "เวลาที่ใช้ในการเปิดเครื่อง", "เวลาที่ใช้ในการปิดเครื่อง", "เวลาที่ใช้ในการบันทึกข้อมูล"],
+            correct: 0
+        },
+        {
+            question: "GX Works เป็นซอฟต์แวร์สำหรับทำอะไร?",
+            options: ["เล่นเกม", "เขียนโปรแกรม PLC", "แก้ไขรูปภาพ", "จัดการไฟล์"],
+            correct: 1
+        },
+        {
+            question: "Ladder Diagram คืออะไร?",
+            options: ["แผนภาพวงจรไฟฟ้า", "รูปแบบการเขียนโปรแกรม PLC", "แผนที่", "โครงสร้างอาคาร"],
+            correct: 1
+        },
+        {
+            question: "MOV คำสั่งนี้ใช้เพื่ออะไร?",
+            options: ["ย้ายข้อมูล", "ลบข้อมูล", "คำนวณ", "เปรียบเทียบ"],
+            correct: 0
+        },
+        {
+            question: "CMP คำสั่งนี้ใช้เพื่ออะไร?",
+            options: ["ย้ายข้อมูล", "ลบข้อมูล", "คำนวณ", "เปรียบเทียบค่า"],
+            correct: 3
+        },
+        {
+            question: "Timer TON หมายถึงอะไร?",
+            options: ["Timer Off Delay", "Timer On Delay", "Timer Output Normal", "Timer On Off"],
+            correct: 1
+        },
+        {
+            question: "ใน PLC Mitsubishi ค่า K100 หมายถึงอะไร?",
+            options: ["ค่าคงที่ 100", "หน่วยความจำตำแหน่งที่ 100", "Timer 100 วินาที", "Counter 100 ครั้ง"],
+            correct: 0
+        }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let selectedAnswer = null;
+    let answered = false;
+    let shuffledQuestions = [];
+
+    function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function shuffleOptions(question) {
+        const correctAnswer = question.options[question.correct];
+        const shuffledOptions = shuffleArray(question.options);
+        const newCorrect = shuffledOptions.indexOf(correctAnswer);
+        
+        return {
+            ...question,
+            options: shuffledOptions,
+            correct: newCorrect
+        };
+    }
+
+    function initQuiz() {
+        shuffledQuestions = shuffleArray(questions).map(shuffleOptions);
+        currentQuestion = 0;
+        score = 0;
+        selectedAnswer = null;
+        answered = false;
+        document.getElementById('finalScore').style.display = 'none';
+        document.getElementById('showResultBtn').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'inline-block';
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (currentQuestion >= shuffledQuestions.length) {
+            showResult();
+            return;
+        }
+
+        const question = shuffledQuestions[currentQuestion];
+        document.getElementById('questionCounter').textContent = `คำถามที่ ${currentQuestion + 1} จาก ${shuffledQuestions.length}`;
+        document.getElementById('questionText').textContent = question.question;
+        
+        const optionsContainer = document.getElementById('optionsContainer');
+        optionsContainer.innerHTML = '';
+        
+        question.options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'option';
+            optionDiv.textContent = option;
+            optionDiv.onclick = () => selectOption(index, optionDiv);
+            optionsContainer.appendChild(optionDiv);
+        });
+
+        // Update progress bar
+        const progress = ((currentQuestion + 1) / shuffledQuestions.length) * 100;
+        document.getElementById('progressBar').style.width = progress + '%';
+
+        selectedAnswer = null;
+        answered = false;
+        document.getElementById('nextBtn').disabled = true;
+    }
+
+    function selectOption(index, element) {
+        if (answered) return;
+
+        // Remove previous selection
+        document.querySelectorAll('.option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+
+        // Mark current selection
+        element.classList.add('selected');
+        selectedAnswer = index;
+        document.getElementById('nextBtn').disabled = false;
+    }
+
+    function nextQuestion() {
+        if (selectedAnswer === null || answered) return;
+
+        const question = shuffledQuestions[currentQuestion];
+        const options = document.querySelectorAll('.option');
+        
+        // Show correct/incorrect answers
+        options.forEach((option, index) => {
+            option.classList.remove('selected');
+            if (index === question.correct) {
+                option.classList.add('correct');
+            } else if (index === selectedAnswer && index !== question.correct) {
+                option.classList.add('incorrect');
+            }
+        });
+
+        // Update score
+        if (selectedAnswer === question.correct) {
+            score++;
+        }
+
+        answered = true;
+        
+        // Move to next question after a delay
+        setTimeout(() => {
+            currentQuestion++;
+            if (currentQuestion >= shuffledQuestions.length) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('showResultBtn').style.display = 'inline-block';
+            } else {
+                loadQuestion();
+            }
+        }, 1500);
+    }
+
+    function showResult() {
+        const percentage = Math.round((score / shuffledQuestions.length) * 100);
+        let grade = '';
+        let color = '';
+        
+        if (percentage >= 80) {
+            grade = 'ยอดเยี่ยม! 🎉';
+            color = '#4CAF50';
+        } else if (percentage >= 70) {
+            grade = 'ดี! 👍';
+            color = '#2196F3';
+        } else if (percentage >= 60) {
+            grade = 'ผ่าน 👌';
+            color = '#FF9800';
+        } else {
+            grade = 'ควรทบทวน 📚';
+            color = '#f44336';
+        }
+
+        const finalScoreDiv = document.getElementById('finalScore');
+        finalScoreDiv.innerHTML = `
+            <h2>ผลการทดสอบ</h2>
+            <p style="font-size: 1.2rem; margin: 10px 0;">คะแนนที่ได้: ${score}/${shuffledQuestions.length}</p>
+            <p style="font-size: 1.5rem; font-weight: bold;">${percentage}% - ${grade}</p>
+        `;
+        finalScoreDiv.style.background = `linear-gradient(45deg, ${color}, ${color}dd)`;
+        finalScoreDiv.style.display = 'block';
+        
+        document.getElementById('questionText').style.display = 'none';
+        document.getElementById('optionsContainer').style.display = 'none';
+        document.getElementById('questionCounter').style.display = 'none';
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('showResultBtn').style.display = 'none';
+    }
+
+    function resetQuiz() {
+        document.getElementById('questionText').style.display = 'block';
+        document.getElementById('optionsContainer').style.display = 'block';
+        document.getElementById('questionCounter').style.display = 'inline-block';
+        initQuiz();
+    }
+
+    // Initialize quiz on page load
+    window.onload = function() {
+        initQuiz();
+    };
+</script>
+```
+
+</body>
+</html>
